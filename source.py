@@ -120,20 +120,20 @@
 # Data Type Corrections
 # Year is stored as an integer rather than a float or string. State names are standardized to title case to ensure consistent joins across datasets.
 
-# In[ ]:
+# In[5]:
 
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
- 
+
 # =============================================================================
 # DATA LOADING
 # Manually compiled from NOAA snowfall records and NSAA annual reports.
 # Covers 8 major ski states, 2019-2023.
 # =============================================================================
- 
+
 data = {
     'state': [
         'Colorado','Colorado','Colorado','Colorado','Colorado',
@@ -196,15 +196,15 @@ data = {
         2,2,3,2,2,
     ]
 }
- 
+
 df = pd.DataFrame(data)
 df['injury_rate']   = (df['injuries']   / df['skier_visits']) * 100_000
 df['fatality_rate'] = (df['fatalities'] / df['skier_visits']) * 100_000
- 
+
 # =============================================================================
 # SUMMARY STATISTICS AND DATA QUALITY CHECK
 # =============================================================================
- 
+
 print("Dataset shape:", df.shape)
 print("\n--- Data Types ---")
 print(df.dtypes)
@@ -216,7 +216,7 @@ print("\n--- Summary Statistics ---")
 print(df.describe().round(2))
 
 
-# In[ ]:
+# In[6]:
 
 
 # =============================================================================
@@ -227,7 +227,7 @@ print(df.describe().round(2))
 # Most observations cluster between 85-310 inches representing the
 # majority of mid-range ski states. No extreme outliers are present.
 # =============================================================================
- 
+
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.hist(df['snowfall_inches'], bins=15, color='steelblue', edgecolor='white')
 ax.set_title('Distribution of Seasonal Snowfall Across States (2019-2023)', fontsize=13)
@@ -239,8 +239,8 @@ ax.legend()
 plt.tight_layout()
 plt.savefig('assets/viz1_snowfall_dist.png', dpi=150)
 plt.show()
- 
- 
+
+
 # =============================================================================
 # VISUALIZATION 2 - Distribution of Injury Rate per 100,000 Visits
 # The injury rate distribution is roughly bell-shaped and centered around
@@ -248,7 +248,7 @@ plt.show()
 # spread with a slight right tail. A few state-seasons show higher rates
 # but no extreme outliers that would need to be removed.
 # =============================================================================
- 
+
 fig, ax = plt.subplots(figsize=(10, 5))
 sns.histplot(df['injury_rate'], kde=True, color='coral', ax=ax)
 ax.set_title('Distribution of Injury Rate per 100,000 Skier Visits', fontsize=13)
@@ -260,8 +260,8 @@ ax.legend()
 plt.tight_layout()
 plt.savefig('assets/viz2_injury_rate_dist.png', dpi=150)
 plt.show()
- 
- 
+
+
 # =============================================================================
 # VISUALIZATION 3 - Scatterplot: Snowfall vs. Injury Rate
 # Core visualization for the project question. Each point is one state-season.
@@ -271,7 +271,7 @@ plt.show()
 # per-visit injury risk. High-snowfall states like Utah show lower injury
 # rates than low-snowfall eastern states like New York and New Hampshire.
 # =============================================================================
- 
+
 fig, ax = plt.subplots(figsize=(9, 6))
 states = df['state'].unique()
 colors = sns.color_palette('tab10', len(states))
@@ -290,8 +290,8 @@ ax.legend(fontsize=8, loc='upper right')
 plt.tight_layout()
 plt.savefig('assets/viz3_scatter.png', dpi=150)
 plt.show()
- 
- 
+
+
 # =============================================================================
 # VISUALIZATION 4 - Correlation Heatmap
 # Snowfall_inches has a moderate negative correlation with injury_rate (-0.47)
@@ -301,7 +301,7 @@ plt.show()
 # 100,000 visits is the correct approach for cross-state comparison rather
 # than using raw injury counts.
 # =============================================================================
- 
+
 fig, ax = plt.subplots(figsize=(8, 6))
 corr = df[['snowfall_inches','injuries','fatalities',
            'skier_visits','injury_rate','fatality_rate']].corr()
@@ -311,8 +311,8 @@ ax.set_title('Correlation Heatmap of Key Variables', fontsize=13)
 plt.tight_layout()
 plt.savefig('assets/viz4_heatmap.png', dpi=150)
 plt.show()
- 
- 
+
+
 # =============================================================================
 # VISUALIZATION 5 (BONUS) - Average Injury Rate by State
 # Bar chart comparing average injury rate across all 8 states over 5 years.
@@ -320,7 +320,7 @@ plt.show()
 # while Utah and Colorado show lower rates despite heavy skier volumes.
 # This reinforces the snowfall-injury rate relationship from Visualization 3.
 # =============================================================================
- 
+
 fig, ax = plt.subplots(figsize=(10, 5))
 state_avg = df.groupby('state')['injury_rate'].mean().sort_values(ascending=False)
 state_avg.plot(kind='bar', color='mediumseagreen', edgecolor='white', ax=ax)
@@ -331,43 +331,238 @@ ax.tick_params(axis='x', rotation=30)
 plt.tight_layout()
 plt.savefig('assets/viz5_state_bar.png', dpi=150)
 plt.show()
- 
+
+
+
+# In[7]:
+
+
+# =============================================================================
+# DATA CLEANING AND TRANSFORMATION
+# =============================================================================
+
+print("\n--- Pre-cleaning shape:", df.shape, "---")
+
+# Missing Values
+# No missing values found. If NOAA API data were pulled directly, missing
+# snowfall records would be imputed using the state mean for that season.
+df.dropna(subset=['skier_visits', 'snowfall_inches'], inplace=True)
+
+# Duplicate Values
+# No duplicates found. Each row is a unique state-year combination.
+df.drop_duplicates(subset=['state', 'year'], keep='first', inplace=True)
+
+# Outlier Filter
+# Rows with fewer than 1,000 skier visits are removed because injury rate
+# becomes statistically unstable at very small visit counts.
+df = df[df['skier_visits'] >= 1000]
+
+# Data Type Corrections
+df['year']  = df['year'].astype(int)
+df['state'] = df['state'].str.strip().str.title()
+
+print("--- Post-cleaning shape:", df.shape, "---")
+print(df.dtypes)
+print(df.head())
+
+
+
+# ---
+# ## Checkpoint 3 — Machine Learning
+# 
+
+# ### Prior Feedback and Updates
+# 
+# **Feedback Received:**
+# No formal feedback was received from peers or the teaching team for Checkpoint 2 beyond the placeholder noted in that section.
+# 
+# **Changes Made:**
+# - Core project question and dataset remain unchanged.
+# - EDA and data cleaning sections from Checkpoint 2 are retained as-is.
+# - This checkpoint adds a machine learning plan and implementation on top of the existing work.
+
+# ### 1. Machine Learning Plan
+# 
+# **Model Type:**  
+# The primary model will be **Linear Regression** to quantify the relationship between seasonal snowfall and injury rate per 100,000 skier visits. A **Random Forest Regressor** will be tested as a secondary model to capture any non-linear patterns and serve as a performance benchmark.
+# 
+# **Target variable:** `injury_rate` (continuous, regression task)  
+# **Features:** `snowfall_inches`, `skier_visits`, `state` (encoded), `year`
+# 
+# **Identified Challenges:**
+# 1. **Small dataset (40 rows):** With only 8 states across 5 years, the dataset is limited. Overfitting is a real risk, especially for more complex models.
+# 2. **Simulated data:** The dataset was constructed for this project rather than pulled directly from live sources, which limits real-world generalizability.
+# 3. **Multicollinearity:** `skier_visits` and `injuries` are strongly correlated (r = 0.97), so raw injury counts will be excluded as a feature to avoid leakage.
+# 4. **Categorical feature (state):** State names must be encoded before being passed to sklearn models.
+# 
+# **How Challenges Will Be Addressed:**
+# - Use an 80/20 train-test split and cross-validation given the small sample size.
+# - Exclude `injuries` and `fatalities` raw counts as features to prevent data leakage into the target.
+# - Apply `OneHotEncoder` for state within a sklearn pipeline.
+# - Compare Linear Regression and Random Forest using RMSE and R² to select the better model.
+
+# ### 2. Machine Learning Implementation Process
+# 
+
+# In[ ]:
+
+
+# =============================================================================
+# MACHINE LEARNING — SETUP AND FEATURE ENGINEERING
+# =============================================================================
+
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
+
+# Features and target
+# Exclude raw injury/fatality counts to prevent leakage into injury_rate target
+features = ['snowfall_inches', 'skier_visits', 'year', 'state']
+target   = 'injury_rate'
+
+X = df[features].copy()
+y = df[target].copy()
+
+# 80/20 split — stratify not applicable for regression, random_state for reproducibility
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+print(f"Training set size : {X_train.shape[0]} rows")
+print(f"Test set size     : {X_test.shape[0]} rows")
 
 
 # In[ ]:
 
 
 # =============================================================================
-# DATA CLEANING AND TRANSFORMATION
+# SKLEARN PIPELINE — PREPROCESSING
+# Numeric features: impute with median, then scale (StandardScaler)
+# Categorical feature (state): impute with most_frequent, then OneHotEncode
 # =============================================================================
- 
-print("\n--- Pre-cleaning shape:", df.shape, "---")
- 
-# Missing Values
-# No missing values found. If NOAA API data were pulled directly, missing
-# snowfall records would be imputed using the state mean for that season.
-df.dropna(subset=['skier_visits', 'snowfall_inches'], inplace=True)
- 
-# Duplicate Values
-# No duplicates found. Each row is a unique state-year combination.
-df.drop_duplicates(subset=['state', 'year'], keep='first', inplace=True)
- 
-# Outlier Filter
-# Rows with fewer than 1,000 skier visits are removed because injury rate
-# becomes statistically unstable at very small visit counts.
-df = df[df['skier_visits'] >= 1000]
- 
-# Data Type Corrections
-df['year']  = df['year'].astype(int)
-df['state'] = df['state'].str.strip().str.title()
- 
-print("--- Post-cleaning shape:", df.shape, "---")
-print(df.dtypes)
-print(df.head())
- 
+
+numeric_features     = ['snowfall_inches', 'skier_visits', 'year']
+categorical_features = ['state']
+
+numeric_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='median')),
+    ('scaler',  StandardScaler())
+])
+
+categorical_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('onehot',  OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+])
+
+preprocessor = ColumnTransformer(transformers=[
+    ('num', numeric_transformer,     numeric_features),
+    ('cat', categorical_transformer, categorical_features)
+])
+
+print('Preprocessor pipeline defined.')
 
 
-# In[4]:
+# In[ ]:
+
+
+# =============================================================================
+# MODEL 1 — LINEAR REGRESSION
+# Baseline model. Interpretable and appropriate for a small dataset.
+# Cross-validation (5-fold) used due to limited sample size.
+# =============================================================================
+
+lr_pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('model',        LinearRegression())
+])
+
+lr_pipeline.fit(X_train, y_train)
+y_pred_lr = lr_pipeline.predict(X_test)
+
+lr_rmse = np.sqrt(mean_squared_error(y_test, y_pred_lr))
+lr_r2   = r2_score(y_test, y_pred_lr)
+
+# 5-fold cross-validation on full dataset
+lr_cv_r2 = cross_val_score(lr_pipeline, X, y, cv=5, scoring='r2')
+
+print('=== Linear Regression ===')
+print(f'Test RMSE : {lr_rmse:.2f}')
+print(f'Test R²   : {lr_r2:.4f}')
+print(f'CV R²     : {lr_cv_r2.mean():.4f} (+/- {lr_cv_r2.std():.4f})')
+
+
+# In[ ]:
+
+
+# =============================================================================
+# MODEL 2 — RANDOM FOREST REGRESSOR
+# Non-linear model used as a benchmark against Linear Regression.
+# n_estimators=100, random_state set for reproducibility.
+# =============================================================================
+
+rf_pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('model',        RandomForestRegressor(n_estimators=100, random_state=42))
+])
+
+rf_pipeline.fit(X_train, y_train)
+y_pred_rf = rf_pipeline.predict(X_test)
+
+rf_rmse = np.sqrt(mean_squared_error(y_test, y_pred_rf))
+rf_r2   = r2_score(y_test, y_pred_rf)
+
+rf_cv_r2 = cross_val_score(rf_pipeline, X, y, cv=5, scoring='r2')
+
+print('=== Random Forest Regressor ===')
+print(f'Test RMSE : {rf_rmse:.2f}')
+print(f'Test R²   : {rf_r2:.4f}')
+print(f'CV R²     : {rf_cv_r2.mean():.4f} (+/- {rf_cv_r2.std():.4f})')
+
+
+# In[ ]:
+
+
+# =============================================================================
+# MODEL EVALUATION AND SELECTION
+# Compare both models on RMSE and R2, then select and justify the better one.
+# =============================================================================
+
+import matplotlib.pyplot as plt
+
+models  = ['Linear Regression', 'Random Forest']
+rmse_scores = [lr_rmse, rf_rmse]
+r2_scores   = [lr_r2,   rf_r2]
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 5))
+
+axes[0].bar(models, rmse_scores, color=['steelblue', 'mediumseagreen'], edgecolor='white')
+axes[0].set_title('Model Comparison — RMSE (lower is better)', fontsize=12)
+axes[0].set_ylabel('RMSE')
+
+axes[1].bar(models, r2_scores, color=['steelblue', 'mediumseagreen'], edgecolor='white')
+axes[1].set_title('Model Comparison — R² (higher is better)', fontsize=12)
+axes[1].set_ylabel('R²')
+axes[1].set_ylim(0, 1)
+
+plt.tight_layout()
+plt.savefig('assets/viz_ml_comparison.png', dpi=150)
+plt.show()
+
+# Select model with lower RMSE
+best = 'Linear Regression' if lr_rmse <= rf_rmse else 'Random Forest'
+print(f'\nSelected model: {best}')
+print('Rationale: Given the small dataset size (40 rows), the simpler model '
+      'is preferred to reduce overfitting risk unless Random Forest shows '
+      'substantially better cross-validated R².')
+
+
+# In[8]:
 
 
 # ⚠️ Make sure you run this cell at the end of your notebook before every submission!
